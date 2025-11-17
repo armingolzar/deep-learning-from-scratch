@@ -17,11 +17,23 @@ def preprocess(image, label):
 
 val_size = 5000
 
-data_train = data_train[:-val_size]
-label_train = label_train[:-val_size]
-
 data_val = data_train[-val_size:]
 label_val = label_train[-val_size:]
 
-train_ds = tf.data.Dataset.from_tensor_slices((data_train, label_train))
+data_train = data_train[:-val_size]
+label_train = label_train[:-val_size]
+
+
+train_ds = tf.data.Dataset.from_tensor_slices((data_train, label_train)).shuffle(10000).map(preprocess, num_parallel_calls=tf.data.AUTOTUNE)
+train_ds = train_ds.batch(64).prefetch(tf.data.AUTOTUNE)
+
+val_ds = tf.data.Dataset.from_tensor_slices((data_val, label_val)).map(preprocess, num_parallel_calls=tf.data.AUTOTUNE)
+val_ds = val_ds.batch(64).prefetch(tf.data.AUTOTUNE)
+
+test_ds = tf.data.Dataset.from_tensor_slices((data_test, label_test)).map(preprocess, num_parallel_calls=tf.data.AUTOTUNE)
+test_ds = test_ds.batch(64).prefetch(tf.data.AUTOTUNE)
+
+# print("train_ds samples:", sum(1 for _ in train_ds.unbatch()))
+# print("val_ds samples:", sum(1 for _ in val_ds.unbatch()))
+# print("test_ds samples:", sum(1 for _ in test_ds.unbatch()))
 
