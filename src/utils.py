@@ -29,4 +29,5 @@ def training_curve(history):
     plt.grid(True)
 
     plt.tight_layout()
+    plt.savefig("..\\assets\\Cifar10_training_curve.jpg")
     plt.show()
