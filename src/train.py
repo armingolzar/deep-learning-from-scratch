@@ -6,9 +6,9 @@ import tensorflow as tf
 train_ds, val_ds, test_ds = prepare_dataset_on_gpu()
 model = build_model()
 model.compile(
-            loss="categorical_crossentropy",
+            loss="sparse_categorical_crossentropy",
             optimizer="Adam",
-            metrics=["Accuracy"])
+            metrics=["accuracy"])
 
 history = model.fit(train_ds, batch_size=64, epochs=20, validation_data=val_ds)
 

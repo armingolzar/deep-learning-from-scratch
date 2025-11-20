@@ -7,7 +7,7 @@ def training_curve(history):
 
     loss = history.history["loss"]
     val_loss = history.history["val_loss"]
-    epochs = len(acc)
+    epochs = range(len(loss))
 
     plt.figure(figsize=(10, 5))
     plt.subplot(1, 2, 1)
