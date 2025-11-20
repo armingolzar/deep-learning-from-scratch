@@ -39,7 +39,7 @@ def prepare_dataset_on_gpu(batch_size=64, val_size=5000):
 
     return train_ds, val_ds, test_ds
 
-train_ds, val_ds, test_ds = prepare_dataset_on_gpu()
+# train_ds, val_ds, test_ds = prepare_dataset_on_gpu()
 
 # for batch_img, batch_label in train_ds.take(1):
 #     print(batch_img.shape, batch_label.shape)
