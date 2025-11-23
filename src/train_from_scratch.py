@@ -20,3 +20,9 @@ class MyDense(tf.keras.layers.Layer):
             return tf.matmul(inputs, self.w) + self.b
         
 
+class MyFlatten(tf.keras.layers.Layer):
+
+    def call(self, inputs):
+        batch = tf.shape(inputs[0])
+        return tf.reshape(inputs, (batch, -1))
+    
