@@ -51,4 +51,26 @@ class MyConv2D(tf.keras.layers.Layer):
         kh, kw = self.kernel_size
         sh, sw = self.strides
 
-        
+        patches = tf.image.extract_patches(images=inputs, sizes=[1, kh, kw, 1], strides=[1, sh, sw, 1], rates=[1, 1, 1, 1], padding=self.padding)
+        # patches shape: (batch, out_h, out_w, kH*kW*in_channels)
+
+        batch = patches[0]
+        out_h = patches[1]
+        out_w = patches[2]
+        in_ch = patches[-1]
+        patch_dim = kh * kw * in_ch
+
+        # Reshape patches so matmul works
+        patches_flat = tf.reshape(patches, (batch * out_h * out_w, patch_dim))
+
+        # Flatten kernel
+        flat_kernel = tf.reshape(self.kernel, (patch_dim, self.filters))
+
+        # Dense-style multiply → conv output
+        conv = tf.matmul(patches_flat, flat_kernel)
+        conv = tf.reshape(conv, (batch, out_h, out_w, self.filters))
+
+        return conv + self.bias
+    
+
+
