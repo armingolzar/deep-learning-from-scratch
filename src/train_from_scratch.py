@@ -1,4 +1,6 @@
 import tensorflow as tf
+from data_loader import prepare_dataset_on_gpu
+from utils import training_curve_ctl
 
 class MyDense(tf.keras.layers.Layer):
 
@@ -72,5 +74,51 @@ class MyConv2D(tf.keras.layers.Layer):
 
         return conv + self.bias
     
+class MyModel(tf.keras.models.Model):
+
+    def __init__(self):
+        super().__init__()
+        self.conv1 = MyConv2D(32, (3, 3))
+        self.conv2 = MyConv2D(64, (3, 3))
+        self.flatten = MyFlatten()
+        self.dense1 = MyDense(64)
+        self.dense2 = MyDense(10)
+        self.relu = tf.keras.layers.ReLU()
+        self.maxpool = tf.keras.layers.MaxPooling2D(pool_size=(2, 2))
+
+        def call(self, inputs, training=False):
+
+            conv1 = self.conv1(inputs)
+            act1 = self.relu(conv1)
+            conv2 = self.conv1(act1)
+            act2 = self.relu(conv2)
+            maxpool1 = self.maxpool(act2)
+
+            conv3 = self.conv2(maxpool1)
+            act3 = self.relu(conv3)
+            conv4 = self.conv2(act3)
+            act4 = self.relu(conv4)
+
+            flatten = self.flatten(act4)
+            dense1 = self.dense1(flatten)
+            act5 = self.relu(dense1)
+            output = self.dense2(act5)
+
+            return output
+        
+
+train_ds, val_ds, test_ds = prepare_dataset_on_gpu()
+
+loss_fn = tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True)
+val_loss_fn = tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True)
+
+optimizer = tf.keras.optimizers.Adam()
+
+train_acc = tf.keras.metrics.SparseCategoricalAccuracy()
+val_acc = tf.keras.metrics.SparseCategoricalAccuracy()
+val_loss_metric = tf.keras.metrics.Mean()
+
+
+
 
 
