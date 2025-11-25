@@ -5,8 +5,8 @@ import tensorflow as tf
 
 
 
-loss_fn = tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True)
-val_loss_fn = tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True)
+loss_fn = tf.keras.losses.SparseCategoricalCrossentropy(from_logits=False)
+val_loss_fn = tf.keras.losses.SparseCategoricalCrossentropy(from_logits=False)
 
 optimizer = tf.keras.optimizers.Adam()
 

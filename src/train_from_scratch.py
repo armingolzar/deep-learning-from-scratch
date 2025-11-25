@@ -86,28 +86,25 @@ class MyModel(tf.keras.models.Model):
         self.relu = tf.keras.layers.ReLU()
         self.maxpool = tf.keras.layers.MaxPooling2D(pool_size=(2, 2))
 
-        def call(self, inputs, training=False):
+    def call(self, inputs, training=False):
 
-            conv1 = self.conv1(inputs)
-            act1 = self.relu(conv1)
-            conv2 = self.conv1(act1)
-            act2 = self.relu(conv2)
-            maxpool1 = self.maxpool(act2)
+        conv1 = self.conv1(inputs)
+        act1 = self.relu(conv1)
+        conv2 = self.conv1(act1)
+        act2 = self.relu(conv2)
+        maxpool1 = self.maxpool(act2)
 
-            conv3 = self.conv2(maxpool1)
-            act3 = self.relu(conv3)
-            conv4 = self.conv2(act3)
-            act4 = self.relu(conv4)
+        conv3 = self.conv2(maxpool1)
+        act3 = self.relu(conv3)
+        conv4 = self.conv2(act3)
+        act4 = self.relu(conv4)
 
-            flatten = self.flatten(act4)
-            dense1 = self.dense1(flatten)
-            act5 = self.relu(dense1)
-            output = self.dense2(act5)
+        flatten = self.flatten(act4)
+        dense1 = self.dense1(flatten)
+        act5 = self.relu(dense1)
+        output = self.dense2(act5)
 
-            return output
-        
-
-train_ds, val_ds, test_ds = prepare_dataset_on_gpu()
+        return output
 
 loss_fn = tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True)
 val_loss_fn = tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True)
@@ -117,6 +114,66 @@ optimizer = tf.keras.optimizers.Adam()
 train_acc = tf.keras.metrics.SparseCategoricalAccuracy()
 val_acc = tf.keras.metrics.SparseCategoricalAccuracy()
 val_loss_metric = tf.keras.metrics.Mean()
+
+best_val_acc = 0.0
+EPOCHS = 20
+
+history = {"loss" : [], "accuracy" : [], "val_loss" : [], "val_accuracy" : []}
+
+train_ds, val_ds, test_ds = prepare_dataset_on_gpu()
+
+model = MyModel()
+
+@tf.function
+def train_step(data, label):
+    with tf.GradientTape() as tape:
+        model_output = model(data, training=True)
+        loss = loss_fn(label, model_output)
+    grads = tape.gradient(loss, model.trainable_variables)
+    optimizer.apply_gradients(zip(grads, model.trainable_variables))
+    train_acc.update_state(label, model_output)
+
+    return loss
+
+@tf.function
+def val_step(val_data, val_label):
+    val_output = model(val_data, training=False)
+    v_loss = val_loss_fn(val_label, val_output)
+    val_acc.update_state(val_label, val_output)
+    val_loss_metric.update_state(v_loss)
+
+
+for epoch in range(EPOCHS):
+    print(f"\n Epoch {epoch+1}/{EPOCHS}")
+
+    train_acc.reset_state()
+    val_acc.reset_state()
+    val_loss_metric.reset_state()
+
+    for images, labels in train_ds:
+        loss = train_step(images, labels)
+
+    for val_images, val_labels in val_ds:
+        val_step(val_images, val_labels)
+
+    train_loss = loss.numpy()
+    val_loss = val_loss_metric.result().numpy()
+    train_accuracy = train_acc.result().numpy()
+    val_accuracy = val_acc.result().numpy()
+
+    print(f"- loss: {train_loss:.4f} - accuracy: {train_accuracy:.4f} - val_loss: {val_loss:.4f} - val_accuracy: {val_accuracy:.4f}")
+
+    if val_accuracy > best_val_acc:
+        best_val_acc = val_accuracy
+        model.save("..\\models\\best_Cifar_from_scratch.h5")
+        print("Saved new best model!")
+
+    history["loss"].append(train_loss)
+    history["accuracy"].append(train_accuracy)
+    history["val_loss"].append(val_loss)
+    history["val_accuracy"].append(val_accuracy)
+
+training_curve_ctl(history)
 
 
 
