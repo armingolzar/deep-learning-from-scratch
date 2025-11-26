@@ -8,30 +8,42 @@ class MyDense(tf.keras.layers.Layer):
         super().__init__()
         self.units = units
 
-
     def build(self, input_shape):
         
         in_features = int(input_shape[-1])
-        limit = tf.sqrt(6.0 / (in_features, self.units))
+        limit = tf.sqrt(6.0 / (in_features + self.units))
 
-        self.w = self.add_weight(shape=(in_features, self.units), initializer=tf.random_uniform_initializer(-limit, limit), trainable=True)
+        self.w = self.add_weight(name="dense_weights", shape=(in_features, self.units), initializer=tf.random_uniform_initializer(-limit, limit), trainable=True)
 
-        self.b = self.add_weight(shape=(self.units,), initializer="zeros", trainable=True)
+        self.b = self.add_weight(name="dense_bias", shape=(self.units,), initializer="zeros", trainable=True)
 
-        def call(self, inputs):
-            return tf.matmul(inputs, self.w) + self.b
+    def call(self, inputs):
+        return tf.matmul(inputs, self.w) + self.b
+    
+    def get_config(self):
+        config = super().get_config()
+        config.update({"units": self.units})
+        return config
         
 
 class MyFlatten(tf.keras.layers.Layer):
 
+    def __init__(self):
+        super().__init__()
+
     def call(self, inputs):
-        batch = tf.shape(inputs[0])
+        batch = tf.shape(inputs)[0]
         return tf.reshape(inputs, (batch, -1))
     
+    def get_config(self):
+        config = super().get_config()
+        return config
+
+
 class MyConv2D(tf.keras.layers.Layer):
 
-    def __init__(self, filters, kernel_size, strides=(1,1), padding="same"):
-        super().__init__()
+    def __init__(self, filters, kernel_size, strides=(1,1), padding="same", name="MyConv2D"):
+        super().__init__(name=name)
         self.filters = filters
         self.kernel_size = (kernel_size if isinstance(kernel_size, tuple) else (kernel_size, kernel_size))
         self.strides = (strides if isinstance(strides, tuple) else (strides, strides))
@@ -45,8 +57,8 @@ class MyConv2D(tf.keras.layers.Layer):
 
         limit = tf.sqrt(6.0 / (kh * kw * in_channels + self.filters))
 
-        self.kernel = self.add_weight(shape=(kh, kw, in_channels, self.filters), initializer=tf.random_uniform_initializer(-limit, limit), trainable=True)
-        self.bias = self.add_weight(shape=(self.filters,), initializer="zeros", trainable=True)
+        self.kernel = self.add_weight(name="kernel_weights", shape=(kh, kw, in_channels, self.filters), initializer=tf.random_uniform_initializer(-limit, limit), trainable=True)
+        self.bias = self.add_weight(name="kernel_bias", shape=(self.filters,), initializer="zeros", trainable=True)
 
     def call(self, inputs):
 
@@ -56,11 +68,10 @@ class MyConv2D(tf.keras.layers.Layer):
         patches = tf.image.extract_patches(images=inputs, sizes=[1, kh, kw, 1], strides=[1, sh, sw, 1], rates=[1, 1, 1, 1], padding=self.padding)
         # patches shape: (batch, out_h, out_w, kH*kW*in_channels)
 
-        batch = patches[0]
-        out_h = patches[1]
-        out_w = patches[2]
-        in_ch = patches[-1]
-        patch_dim = kh * kw * in_ch
+        batch = tf.shape(patches)[0]
+        out_h = tf.shape(patches)[1]
+        out_w = tf.shape(patches)[2]
+        patch_dim = tf.shape(patches)[3]
 
         # Reshape patches so matmul works
         patches_flat = tf.reshape(patches, (batch * out_h * out_w, patch_dim))
@@ -74,12 +85,19 @@ class MyConv2D(tf.keras.layers.Layer):
 
         return conv + self.bias
     
+    def get_config(self):
+        config = super().get_config()
+        config.update({"filters" : self.filters, "kernel_size" : self.kernel_size, "strides" : self.strides, "padding" : self.padding.lower()})
+        return config
+    
 class MyModel(tf.keras.models.Model):
 
     def __init__(self):
         super().__init__()
-        self.conv1 = MyConv2D(32, (3, 3))
-        self.conv2 = MyConv2D(64, (3, 3))
+        self.conv1a = MyConv2D(32, (3, 3))
+        self.conv1b = MyConv2D(32, (3, 3))
+        self.conv2a = MyConv2D(64, (3, 3))
+        self.conv2b = MyConv2D(64, (3, 3))
         self.flatten = MyFlatten()
         self.dense1 = MyDense(64)
         self.dense2 = MyDense(10)
@@ -88,15 +106,15 @@ class MyModel(tf.keras.models.Model):
 
     def call(self, inputs, training=False):
 
-        conv1 = self.conv1(inputs)
+        conv1 = self.conv1a(inputs)
         act1 = self.relu(conv1)
-        conv2 = self.conv1(act1)
+        conv2 = self.conv1b(act1)
         act2 = self.relu(conv2)
         maxpool1 = self.maxpool(act2)
 
-        conv3 = self.conv2(maxpool1)
+        conv3 = self.conv2a(maxpool1)
         act3 = self.relu(conv3)
-        conv4 = self.conv2(act3)
+        conv4 = self.conv2b(act3)
         act4 = self.relu(conv4)
 
         flatten = self.flatten(act4)
@@ -105,6 +123,11 @@ class MyModel(tf.keras.models.Model):
         output = self.dense2(act5)
 
         return output
+    
+    def get_config(self):
+        config = super().get_config()
+        return config
+
 
 loss_fn = tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True)
 val_loss_fn = tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True)
@@ -165,8 +188,8 @@ for epoch in range(EPOCHS):
 
     if val_accuracy > best_val_acc:
         best_val_acc = val_accuracy
-        model.save("..\\models\\best_Cifar_from_scratch.h5")
-        print("Saved new best model!")
+        model.save("..\\models\\best_Cifar_from_scratch", save_format="tf")
+        print(f"Saved new best model ---> {best_val_acc}")
 
     history["loss"].append(train_loss)
     history["accuracy"].append(train_accuracy)
@@ -175,7 +198,37 @@ for epoch in range(EPOCHS):
 
 training_curve_ctl(history)
 
+# This function is for printing some useful information about a model
+def model_info(model):
 
+    # 1. This is in layer stage and it shows top layer variables
+    for i, layer in enumerate(model.layers):
+        print(f"Layer {i}: {layer.__class__.__name__}")
+        print(f" - Unique TF name: {layer.name}")
 
+        trainable_params = sum(tf.size(v).numpy() for v in layer.trainable_variables)
+        non_trainable_params = sum(tf.size(v).numpy() for v in layer.non_trainable_variables)
+        total_params = trainable_params + non_trainable_params
 
+        print(f" - Trainable params: {trainable_params}")
+        print(f" - Non-trainable params: {non_trainable_params}")
+        print(f" - Total params: {total_params}")
 
+        print(" - Variables:")
+        for v in layer.variables:
+            print(f" • {v.name} | shape = {v.shape} | trainable: {v.trainable}")
+
+        print("------------------------------------------------------------")
+
+    # 2. This is in model stage and it shows all layers and variables including nested ones
+    print("=== All model variables ===")
+    for v in model.variables:
+        print(f"{v.name} | shape: {v.shape} | trainable: {v.trainable}")
+
+model_info(model)
+
+### Attention when you want to save your model with custom layers, 
+# you can pass a name for the layer but you have to pass a name for each weight that you create in build method of that layer
+# also you need to define get_config() method and add all new arguments and prameters of __init__ to super().get_config()
+# so tensorflow can serialize and gather every customize thing in the layer and save it for you to load and use
+# look at above code which customize layers has name or not for theirselves but all of them have a name for their weights and have get_config() method
