@@ -36,8 +36,7 @@ output = Dense(10, activation="softmax", name="output")(dense1)
 
 ## Project Structure
 
-bash
-Copy code
+```bash
 project_root/
 │
 ├── data/                     # CIFAR-10 or custom data
@@ -57,6 +56,7 @@ project_root/
 ├── LICENSE
 ├── requirements.txt
 └── README.md
+```
 
 ## Dataset
 
@@ -132,6 +132,6 @@ python -m src.train_from_scratch
 - Modular project organization
 
 ## Author
-**Armin Golzar**
-AI Specialist — Deep Learning 
+**Armin Golzar** <br>
+AI Specialist — Deep Learning <br> 
 [LinkedIn](https://www.linkedin.com/in/armingolzar/)
