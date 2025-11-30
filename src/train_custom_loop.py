@@ -1,6 +1,7 @@
-from data_loader import prepare_dataset_on_gpu
-from model import build_model
-from utils import training_curve_ctl
+from src.data_loader import prepare_dataset_on_gpu
+from src.model import build_model
+from src.utils import training_curve_ctl
+import src.config as config
 import tensorflow as tf
 
 
@@ -15,7 +16,6 @@ train_acc = tf.keras.metrics.SparseCategoricalAccuracy()
 val_acc = tf.keras.metrics.SparseCategoricalAccuracy()
 val_loss_metric = tf.keras.metrics.Mean()
 best_val_acc = 0.0
-EPOCHS = 20
 
 history = {"loss":[], "accuracy":[], "val_loss":[], "val_accuracy":[]}
 
@@ -42,8 +42,8 @@ def val_step(data_val, label_val):
     val_loss_metric.update_state(loss_val)
 
 
-for epoch in range(EPOCHS):
-    print(f"\n Epoch {epoch+1}/{EPOCHS}")
+for epoch in range(config.EPOCHS):
+    print(f"\n Epoch {epoch+1}/{config.EPOCHS}")
 
     train_acc.reset_state()
     val_acc.reset_state()

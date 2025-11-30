@@ -1,6 +1,7 @@
 import tensorflow as tf
-from data_loader import prepare_dataset_on_gpu
-from utils import training_curve_ctl
+from src.data_loader import prepare_dataset_on_gpu
+from src.utils import training_curve_ctl
+import src.config as config
 
 class MyDense(tf.keras.layers.Layer):
 
@@ -139,7 +140,7 @@ val_acc = tf.keras.metrics.SparseCategoricalAccuracy()
 val_loss_metric = tf.keras.metrics.Mean()
 
 best_val_acc = 0.0
-EPOCHS = 20
+
 
 history = {"loss" : [], "accuracy" : [], "val_loss" : [], "val_accuracy" : []}
 
@@ -166,8 +167,8 @@ def val_step(val_data, val_label):
     val_loss_metric.update_state(v_loss)
 
 
-for epoch in range(EPOCHS):
-    print(f"\n Epoch {epoch+1}/{EPOCHS}")
+for epoch in range(config.EPOCHS):
+    print(f"\n Epoch {epoch+1}/{config.EPOCHS}")
 
     train_acc.reset_state()
     val_acc.reset_state()
