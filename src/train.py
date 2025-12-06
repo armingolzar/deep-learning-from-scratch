@@ -17,7 +17,7 @@ model.compile(
 callbacks = [EarlyStopping(monitor="val_loss", patience=5, restore_best_weights=True, verbose=1), 
              ReduceLROnPlateau(monitor="val_loss", factor=0.2, patience=2, min_delta=1e-4, min_lr=1e-7, verbose=1),
              ModelCheckpoint(filepath=".\\models\\best_model_callback.h5", monitor="val_loss", save_best_only=True, save_weights_only=False, verbose=1),
-             CSVLogger(filename=".\\model\\log\\model_callback.csv", append=False, seprator=",")]
+             CSVLogger(filename=".\\models\\log\\model_callback.csv", append=False, separator=",")]
 
 history = model.fit(train_ds, epochs=config.EPOCHS, validation_data=val_ds, callbacks=callbacks)
 
